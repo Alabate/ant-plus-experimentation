@@ -117,12 +117,16 @@ export class Messages {
 	static BUFFER_INDEX_EXT_MSG_BEGIN: number = 12;
 
 	static resetSystem(): Buffer {
+		console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		console.log('> Message:resetSystem')
 		const payload: number[] = [];
 		payload.push(0x00);
 		return this.buildMessage(payload, Constants.MESSAGE_SYSTEM_RESET);
 	}
 
 	static requestMessage(channel: number, messageID: number): Buffer {
+		console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		console.log('> Message:requestMessage', channel, messageID)
 		let payload: number[] = [];
 		payload = payload.concat(this.intToLEHexArray(channel));
 		payload.push(messageID);
@@ -130,6 +134,8 @@ export class Messages {
 	}
 
 	static setNetworkKey(): Buffer {
+		console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		console.log('> Message:setNetworkKey')
 		const payload: number[] = [];
 		payload.push(Constants.DEFAULT_NETWORK_NUMBER);
 		payload.push(0xB9);
@@ -144,6 +150,8 @@ export class Messages {
 	}
 
 	static assignChannel(channel: number, type = 'receive'): Buffer {
+		console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		console.log('> Message:assignChannel', channel, type)
 		let payload: number[] = [];
 		payload = payload.concat(this.intToLEHexArray(channel));
 		if (type === 'receive') {
@@ -166,6 +174,8 @@ export class Messages {
 	}
 
 	static setDevice(channel: number, deviceID: number, deviceType: number, transmissionType: number): Buffer {
+		console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		console.log('> Message:setDevice', channel, deviceID, deviceType, transmissionType)
 		let payload: number[] = [];
 		payload = payload.concat(this.intToLEHexArray(channel));
 		payload = payload.concat(this.intToLEHexArray(deviceID, 2));
@@ -175,6 +185,8 @@ export class Messages {
 	}
 
 	static searchChannel(channel: number, timeout: number): Buffer {
+		console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		console.log('> Message:searchChannel', channel, timeout)
 		let payload: number[] = [];
 		payload = payload.concat(this.intToLEHexArray(channel));
 		payload = payload.concat(this.intToLEHexArray(timeout));
@@ -182,6 +194,8 @@ export class Messages {
 	}
 
 	static setPeriod(channel: number, period: number): Buffer {
+		console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		console.log('> Message:setPeriod', channel, period)
 		let payload: number[] = [];
 		payload = payload.concat(this.intToLEHexArray(channel));
 		payload = payload.concat(this.intToLEHexArray(period));
@@ -189,6 +203,8 @@ export class Messages {
 	}
 
 	static setFrequency(channel: number, frequency: number): Buffer {
+		console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		console.log('> Message:setFrequency', channel, frequency)
 		let payload: number[] = [];
 		payload = payload.concat(this.intToLEHexArray(channel));
 		payload = payload.concat(this.intToLEHexArray(frequency));
@@ -196,6 +212,8 @@ export class Messages {
 	}
 
 	static setRxExt(): Buffer {
+		console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		console.log('> Message:setRxExt')
 		let payload: number[] = [];
 		payload = payload.concat(this.intToLEHexArray(0));
 		payload = payload.concat(this.intToLEHexArray(1));
@@ -203,6 +221,8 @@ export class Messages {
 	}
 
 	static libConfig(channel: number, how: number): Buffer {
+		console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		console.log('> Message:libConfig')
 		let payload: number[] = [];
 		payload = payload.concat(this.intToLEHexArray(channel));
 		payload = payload.concat(this.intToLEHexArray(how));
@@ -210,6 +230,8 @@ export class Messages {
 	}
 
 	static openRxScan(): Buffer {
+		console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		console.log('> Message:openRxScan')
 		let payload: number[] = [];
 		payload = payload.concat(this.intToLEHexArray(0));
 		payload = payload.concat(this.intToLEHexArray(1));
@@ -217,29 +239,39 @@ export class Messages {
 	}
 
 	static openChannel(channel: number): Buffer {
+		console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		console.log('> Message:openChannel')
 		let payload: number[] = [];
 		payload = payload.concat(this.intToLEHexArray(channel));
 		return this.buildMessage(payload, Constants.MESSAGE_CHANNEL_OPEN);
 	}
 
 	static closeChannel(channel: number): Buffer {
+		console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		console.log('> Message:closeChannel')
 		let payload: number[] = [];
 		payload = payload.concat(this.intToLEHexArray(channel));
 		return this.buildMessage(payload, Constants.MESSAGE_CHANNEL_CLOSE);
 	}
 
 	static unassignChannel(channel: number): Buffer {
+		console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		console.log('> Message:unassignChannel')
 		let payload: number[] = [];
 		payload = payload.concat(this.intToLEHexArray(channel));
 		return this.buildMessage(payload, Constants.MESSAGE_CHANNEL_UNASSIGN);
 	}
 
 	static acknowledgedData(channel: number, payload: number[]): Buffer {
+		console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		console.log('> Message:acknowledgedData')
 		payload = this.intToLEHexArray(channel).concat(payload);
 		return this.buildMessage(payload, Constants.MESSAGE_CHANNEL_ACKNOWLEDGED_DATA);
 	}
 
 	static broadcastData(channel: number, payload: number[]): Buffer {
+		console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		console.log('> Message:broadcastData')
 		payload = this.intToLEHexArray(channel).concat(payload);
 		return this.buildMessage(payload, Constants.MESSAGE_CHANNEL_BROADCAST_DATA);
 	}
@@ -602,17 +634,20 @@ export abstract class BaseSensor extends events.EventEmitter {
 		const channel = 0;
 
 		const onStatus = (status) => {
+			console.log('< BaseSensor scan:onstatus')
 			switch (status.msg) {
 				case Constants.MESSAGE_RF:
 					switch (status.code) {
 						case Constants.EVENT_CHANNEL_CLOSED:
 						case Constants.EVENT_RX_FAIL_GO_TO_SEARCH:
+							console.log('< BaseSensor scan:rf:rx_fail', status)
 							this.write(Messages.unassignChannel(channel));
 							return true;
 						case Constants.EVENT_TRANSFER_TX_COMPLETED:
 						case Constants.EVENT_TRANSFER_TX_FAILED:
 						case Constants.EVENT_RX_FAIL:
 						case Constants.INVALID_SCAN_TX_CHANNEL:
+							console.log('< BaseSensor scan:rf:tx_fail', status)
 							const mc = this.msgQueue.shift();
 							if (mc && mc.cbk) {
 								mc.cbk(status.code === Constants.EVENT_TRANSFER_TX_COMPLETED);
@@ -626,31 +661,40 @@ export abstract class BaseSensor extends events.EventEmitter {
 					}
 					break;
 				case Constants.MESSAGE_CHANNEL_ASSIGN:
+					console.log('< BaseSensor scan:channel-assign')
 					this.write(Messages.setDevice(channel, 0, 0, 0));
 					return true;
 				case Constants.MESSAGE_CHANNEL_ID:
+					console.log('< BaseSensor scan:channel-id')
 					this.write(Messages.setFrequency(channel, frequency));
 					return true;
 				case Constants.MESSAGE_CHANNEL_FREQUENCY:
+					console.log('< BaseSensor scan:freq')
 					this.write(Messages.setRxExt());
 					return true;
 				case Constants.MESSAGE_ENABLE_RX_EXT:
+					console.log('< BaseSensor scan:ENABLE_RX_EXT')
 					this.write(Messages.libConfig(channel, 0xE0));
 					return true;
 				case Constants.MESSAGE_LIB_CONFIG:
+					console.log('< BaseSensor scan:lib-config')
 					this.write(Messages.openRxScan());
 					return true;
 				case Constants.MESSAGE_CHANNEL_OPEN_RX_SCAN:
+					console.log('< BaseSensor scan:OPEN_RX_SCAN')
 					process.nextTick(() => this.emit('attached'));
 					return true;
 				case Constants.MESSAGE_CHANNEL_CLOSE:
+					console.log('< BaseSensor scan:channel-close')
 					return true;
 				case Constants.MESSAGE_CHANNEL_UNASSIGN:
+					console.log('< BaseSensor scan:channel-unassign')
 					this.statusCbk = undefined;
 					this.channel = undefined;
 					process.nextTick(() => this.emit('detached'));
 					return true;
 				case Constants.MESSAGE_CHANNEL_ACKNOWLEDGED_DATA:
+					console.log('< BaseSensor scan:ack')
 					return (status.code === Constants.TRANSFER_IN_PROGRESS);
 				default:
 					break;
@@ -681,6 +725,7 @@ export abstract class BaseSensor extends events.EventEmitter {
 
 	protected attach(channel: number, type: string, deviceID: number, deviceType: number, transmissionType: number,
 		timeout: number, period: number, frequency: number) {
+			console.log('> BaseSensor attach')
 		if (this.channel !== undefined) {
 			throw 'already attached';
 		}
@@ -692,17 +737,20 @@ export abstract class BaseSensor extends events.EventEmitter {
 		this.transmissionType = transmissionType;
 
 		const onStatus = (status) => {
+			console.log('< BaseSensor attach:onstatus')
 			switch (status.msg) {
 				case Constants.MESSAGE_RF:
 					switch (status.code) {
 						case Constants.EVENT_CHANNEL_CLOSED:
 						case Constants.EVENT_RX_FAIL_GO_TO_SEARCH:
+							console.log('< BaseSensor attach:rf:rx_fail', status)
 							this.write(Messages.unassignChannel(channel));
 							return true;
 						case Constants.EVENT_TRANSFER_TX_COMPLETED:
 						case Constants.EVENT_TRANSFER_TX_FAILED:
 						case Constants.EVENT_RX_FAIL:
 						case Constants.INVALID_SCAN_TX_CHANNEL:
+							console.log('< BaseSensor attach:rf:tx_fail', status)
 							const mc = this.msgQueue.shift();
 							if (mc && mc.cbk) {
 								mc.cbk(status.code === Constants.EVENT_TRANSFER_TX_COMPLETED);
@@ -716,34 +764,44 @@ export abstract class BaseSensor extends events.EventEmitter {
 					}
 					break;
 				case Constants.MESSAGE_CHANNEL_ASSIGN:
+					console.log('< BaseSensor attach:assign')
 					this.write(Messages.setDevice(channel, deviceID, deviceType, transmissionType));
 					return true;
 				case Constants.MESSAGE_CHANNEL_ID:
+					console.log('< BaseSensor attach:channel-id')
 					this.write(Messages.searchChannel(channel, timeout));
 					return true;
 				case Constants.MESSAGE_CHANNEL_SEARCH_TIMEOUT:
+					console.log('< BaseSensor attach:search-timeout')
 					this.write(Messages.setFrequency(channel, frequency));
 					return true;
 				case Constants.MESSAGE_CHANNEL_FREQUENCY:
+					console.log('< BaseSensor attach:freq')
 					this.write(Messages.setPeriod(channel, period));
 					return true;
 				case Constants.MESSAGE_CHANNEL_PERIOD:
+					console.log('< BaseSensor attach:period')
 					this.write(Messages.libConfig(channel, 0xE0));
 					return true;
 				case Constants.MESSAGE_LIB_CONFIG:
+					console.log('< BaseSensor attach:lib-config')
 					this.write(Messages.openChannel(channel));
 					return true;
 				case Constants.MESSAGE_CHANNEL_OPEN:
+					console.log('< BaseSensor attach:channel-open')
 					process.nextTick(() => this.emit('attached'));
 					return true;
 				case Constants.MESSAGE_CHANNEL_CLOSE:
+					console.log('< BaseSensor attach:channel-close')
 					return true;
 				case Constants.MESSAGE_CHANNEL_UNASSIGN:
+					console.log('< BaseSensor attach:channel-unassign')
 					this.statusCbk = undefined;
 					this.channel = undefined;
 					process.nextTick(() => this.emit('detached'));
 					return true;
 				case Constants.MESSAGE_CHANNEL_ACKNOWLEDGED_DATA:
+					console.log('< BaseSensor attach:ack')
 					return (status.code === Constants.TRANSFER_IN_PROGRESS);
 				default:
 					break;
@@ -757,6 +815,7 @@ export abstract class BaseSensor extends events.EventEmitter {
 	}
 
 	public detach() {
+		console.log('> BaseSensor detach')
 		if (this.channel === undefined) {
 			return;
 		}
@@ -767,12 +826,15 @@ export abstract class BaseSensor extends events.EventEmitter {
 	}
 
 	protected write(data: Buffer) {
+		console.log('> BaseSensor write')
 		this.stick.write(data);
 	}
 
 	private handleEventMessages(data: Buffer) {
 		const messageID = data.readUInt8(Messages.BUFFER_INDEX_MSG_TYPE);
 		const channel = data.readUInt8(Messages.BUFFER_INDEX_CHANNEL_NUM);
+		console.log('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
+		console.log('< BaseSensor handleEventMessages', this.channel, this.deviceID, this.transmissionType)
 
 		if (channel === this.channel) {
 			if (messageID === Constants.MESSAGE_CHANNEL_EVENT) {
@@ -781,21 +843,31 @@ export abstract class BaseSensor extends events.EventEmitter {
 					code: data.readUInt8(Messages.BUFFER_INDEX_MSG_DATA + 1),
 				};
 
+				console.log('< BaseSensor handleEventMessages:statusCbk', status)
 				const handled = this.statusCbk && this.statusCbk(status);
 				if (!handled) {
-					console.log('Unhandled event: ' + data.toString('hex'));
+					console.log('< Unhandled event: ' + data.toString('hex'));
+					console.log('< BaseSensor handleEventMessages:eventData')
 					this.emit('eventData', {
 						message: data.readUInt8(Messages.BUFFER_INDEX_MSG_DATA),
 						code: data.readUInt8(Messages.BUFFER_INDEX_MSG_DATA + 1),
 					});
 				}
 			} else if (this.decodeDataCbk) {
+				console.log('< BaseSensor handleEventMessages:decodeDataCbk')
 				this.decodeDataCbk(data);
 			}
+			else {
+				console.log('< BaseSensor handleEventMessages:not MESSAGE_CHANNEL_EVENT and no decode callback')
+			}
+		}
+		else {
+			console.log('< BaseSensor handleEventMessages:not-our-channel', this.channel, channel)
 		}
 	}
 
 	protected send(data: Buffer, cbk?: SendCallback) {
+		console.log('> BaseSensor send')
 		this.msgQueue.push({ msg: data, cbk });
 		if (this.msgQueue.length === 1) {
 			this.write(data);
@@ -836,6 +908,7 @@ export abstract class AntPlusSensor extends AntPlusBaseSensor {
 			case Constants.MESSAGE_CHANNEL_BROADCAST_DATA:
 			case Constants.MESSAGE_CHANNEL_ACKNOWLEDGED_DATA:
 			case Constants.MESSAGE_CHANNEL_BURST_DATA:
+				console.log('< AntPlusSensor decodeData:data')
 				if (this.deviceID === 0) {
 					this.write(Messages.requestMessage(this.channel, Constants.MESSAGE_CHANNEL_ID));
 				}
@@ -844,6 +917,7 @@ export abstract class AntPlusSensor extends AntPlusBaseSensor {
 			case Constants.MESSAGE_CHANNEL_ID:
 				this.deviceID = data.readUInt16LE(Messages.BUFFER_INDEX_MSG_DATA);
 				this.transmissionType = data.readUInt8(Messages.BUFFER_INDEX_MSG_DATA + 3);
+				console.log('< AntPlusSensor decodeData:channel_id', this.deviceID, this.transmissionType)
 				break;
 			default:
 				break;
@@ -883,7 +957,9 @@ export abstract class AntPlusScanner extends AntPlusBaseSensor {
 		const deviceId = data.readUInt16LE(Messages.BUFFER_INDEX_EXT_MSG_BEGIN + 1);
 		const deviceType = data.readUInt8(Messages.BUFFER_INDEX_EXT_MSG_BEGIN + 3);
 
+		console.log('< AntPlusScanner decodeData', deviceId, deviceType)
 		if (deviceType !== this.deviceType()) {
+			console.log('< AntPlusScanner decodeData:bas-device-type')
 			return;
 		}
 
@@ -902,9 +978,11 @@ export abstract class AntPlusScanner extends AntPlusBaseSensor {
 			case Constants.MESSAGE_CHANNEL_BROADCAST_DATA:
 			case Constants.MESSAGE_CHANNEL_ACKNOWLEDGED_DATA:
 			case Constants.MESSAGE_CHANNEL_BURST_DATA:
+				console.log('< AntPlusScanner decodeData:updateState')
 				this.updateState(deviceId, data);
 				break;
 			default:
+				console.log('< AntPlusScanner decodeData:ignored-message-type', data.readUInt8(Messages.BUFFER_INDEX_MSG_TYPE))
 				break;
 		}
 	}

@@ -25,6 +25,9 @@ class SpeedSensorState {
 	BatteryVoltage?: number;
 	BatteryStatus?: 'New' | 'Good' | 'Ok' | 'Low' | 'Critical' | 'Invalid';
 	Motion?: boolean;
+
+	MessageTimestamp?: [number, number];
+	MessageEstimatedPeriod?: number;
 }
 
 class SpeedScanState extends SpeedSensorState {
@@ -43,7 +46,7 @@ export class SpeedSensor extends AntPlusSensor {
 	}
 
 	public attach(channel, deviceID): void {
-		super.attach(channel, 'receive', deviceID, SpeedSensor.deviceType, 0, 255, 8086);
+		super.attach(channel, 'receive', deviceID, SpeedSensor.deviceType, 0, 255, 8118);
 		this.state = new SpeedSensorState(deviceID);
 	}
 
@@ -75,6 +78,7 @@ export class SpeedScanner extends AntPlusScanner {
 	}
 
 	protected updateRssiAndThreshold(deviceId, rssi, threshold) {
+		console.log('< SpeedScanner updateRssiAndThreshold', deviceId, rssi, threshold)
 		this.states[deviceId].Rssi = rssi;
 		this.states[deviceId].Threshold = threshold;
 	}
@@ -87,6 +91,13 @@ export class SpeedScanner extends AntPlusScanner {
 const TOGGLE_MASK = 0x80;
 
 function updateState(sensor: SpeedSensor | SpeedScanner, state: SpeedSensorState | SpeedScanState, data: Buffer) {
+	if (state.MessageTimestamp) {
+		const diff = process.hrtime(state.MessageTimestamp);
+		state.MessageEstimatedPeriod = (diff[0] + (diff[1] / 1.0e9)) * 32768;
+	}
+	state.MessageTimestamp = process.hrtime();
+
+
 	const pageNum = data.readUInt8(Messages.BUFFER_INDEX_MSG_DATA);
 	switch (pageNum & ~TOGGLE_MASK) { //check the new pages and remove the toggle bit
 		case 1:
@@ -174,4 +185,5 @@ function updateState(sensor: SpeedSensor | SpeedScanner, state: SpeedSensorState
 			sensor.emit('speedData', state);
 		}
 	}
+	console.log('speed-sensor.ts updateState', state)
 }
