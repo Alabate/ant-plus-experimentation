@@ -14,7 +14,7 @@ speedSensor.on('speedData', data => {
 
 stick.on('startup', function () {
 	console.log('startup');
-	speedSensor.attach(0, 0);
+	speedSensor.attach(0, SPEED_SENSOR_ID);
 });
 
 stick.on('attach', function () {
