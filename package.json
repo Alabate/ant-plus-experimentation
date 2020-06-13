@@ -1,0 +1,14 @@
+{
+  "name": "ant-bridge",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ant-plus": "file:local_modules/ant-plus"
+  }
+}
