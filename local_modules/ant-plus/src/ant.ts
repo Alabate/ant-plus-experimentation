@@ -107,6 +107,16 @@ export enum Constants {
 	CAPABILITIES_EXT_ASSIGN_ENABLED = 0x20,
 	CAPABILITIES_FS_ANTFS_ENABLED = 0x40,
 	TIMEOUT_NEVER = 0xFF,
+
+	// Common data page numbers
+	DATA_PAGE_MANUFACTURERS_INFORMATION = 0x50,
+	DATA_PAGE_PRODUCT_INFORMATION = 0x51,
+	DATA_PAGE_BATTERY_STATUS = 0x52,
+	DATA_PAGE_TIME_AND_DATE = 0x53,
+	DATA_PAGE_SUBFIELD_DATA = 0x54,
+	DATA_PAGE_MEMORY_LEVEL = 0x55,
+	DATA_PAGE_PAIRED_DEVICES = 0x56,
+	DATA_PAGE_ERROR_DESCRIPTION = 0x57,
 }
 
 export class Messages {
@@ -275,6 +285,33 @@ export class Messages {
 		payload = this.intToLEHexArray(channel).concat(payload);
 		return this.buildMessage(payload, Constants.MESSAGE_CHANNEL_BROADCAST_DATA);
 	}
+
+	static manufacturersInformationDataPage(channel: number, hardwareRevision: number, manufacturerId: number,
+		modelNumber: number): Buffer {
+		console.debug('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		console.debug('> Message:manufacturersInformationDataPage')
+		let payload: number[] = [];
+		payload.push(Constants.DATA_PAGE_MANUFACTURERS_INFORMATION);
+		payload.push(0xFF);
+		payload.push(0xFF);
+		payload = payload.concat(this.intToLEHexArray(hardwareRevision))
+		payload = payload.concat(this.intToLEHexArray(manufacturerId, 2))
+		payload = payload.concat(this.intToLEHexArray(modelNumber, 2))
+		return Messages.broadcastData(channel, payload);
+	}
+
+	static productInformationDataPage(channel: number, softwareRevision: number, serialNumber: number): Buffer {
+		console.debug('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		console.debug('> Message:productInformationDataPage')
+		let payload: number[] = [];
+		payload.push(Constants.DATA_PAGE_PRODUCT_INFORMATION);
+		payload.push(0xFF);
+		payload = payload.concat(this.intToLEHexArray(Math.round(softwareRevision * 10)));
+		payload = payload.concat(this.intToLEHexArray(Math.round(softwareRevision * 1000) % 100));
+		payload = payload.concat(this.intToLEHexArray(serialNumber, 4));
+		return Messages.broadcastData(channel, payload);
+	}
+	
 
 	static buildMessage(payload: number[] = [], msgID = 0x00): Buffer {
 		const m: number[] = [];
@@ -614,6 +651,7 @@ export abstract class BaseSensor extends events.EventEmitter {
 
 	protected decodeDataCbk: (data: Buffer) => void;
 	protected statusCbk: (status: { msg: number, code: number }) => boolean;
+	protected txCbk: () => void;
 
 	protected abstract updateState(deviceId: number, data: Buffer): void;
 
@@ -757,6 +795,17 @@ export abstract class BaseSensor extends events.EventEmitter {
 							}
 							if (this.msgQueue.length) {
 								this.write(this.msgQueue[0].msg);
+							}
+							return true;
+						case Constants.EVENT_TX:
+							/* 
+								A Broadcast message has been transmitted successfully. This
+								event should be used to send the next message for
+								transmission to the ANT device if the node is setup as a
+								master.
+							*/
+							if (this.txCbk) {
+								this.txCbk();
 							}
 							return true;
 						default:

@@ -5,6 +5,22 @@
 
 import { AntPlusSensor, AntPlusScanner, Messages } from './ant';
 
+export enum BPConstants {
+	// Data page numbers
+	DATA_PAGE_CALIBRATION = 0x01,
+	DATA_PAGE_GET_SET_PARAMETERS = 0x02,
+	DATA_PAGE_MEASUREMENT_OUTPUT = 0x03,
+	DATA_PAGE_POWER_ONLY = 0x10,
+	DATA_PAGE_WHEEL_TORQUE = 0x11,
+	DATA_PAGE_CRANK_TORQUE = 0x12,
+	DATA_PAGE_TORQUE_EFFECTIVENESS_PEDAL_SMOOTHNESS = 0x13,
+	DATA_PAGE_TORQUE_BARYCENTRE = 0x14,
+	DATA_PAGE_CRANK_TORQUE_FREQUENCY = 0x20,
+	DATA_PAGE_RIGHT_PEDAL_FORCE_ANGLE = 0xE0,
+	DATA_PAGE_LEFT_PEDAL_FORCE_ANGLE = 0xE1,
+	DATA_PAGE_PEDAL_POSITION = 0xE2,
+}
+
 class BicyclePowerSensorState {
 	constructor(deviceID: number) {
 		this.DeviceID = deviceID;
@@ -78,7 +94,7 @@ function updateState(
 
 	const page = data.readUInt8(Messages.BUFFER_INDEX_MSG_DATA);
 	switch (page) {
-		case 0x01: {
+		case BPConstants.DATA_PAGE_CALIBRATION: {
 			const calID = data.readUInt8(Messages.BUFFER_INDEX_MSG_DATA + 1);
 			if (calID === 0x10) {
 				const calParam = data.readUInt8(Messages.BUFFER_INDEX_MSG_DATA + 2);
@@ -88,7 +104,7 @@ function updateState(
 			}
 			break;
 		}
-		case 0x10: {
+		case BPConstants.DATA_PAGE_POWER_ONLY: {
 			const pedalPower = data.readUInt8(Messages.BUFFER_INDEX_MSG_DATA + 2);
 			if (pedalPower !== 0xFF) {
 				if (pedalPower & 0x80) {
@@ -115,7 +131,7 @@ function updateState(
 			state.Power = data.readUInt16LE(Messages.BUFFER_INDEX_MSG_DATA + 6);
 			break;
 		}
-		case 0x20: {
+		case BPConstants.DATA_PAGE_CRANK_TORQUE_FREQUENCY: {
 			const oldEventCount = state.EventCount;
 			const oldTimeStamp = state.TimeStamp;
 			const oldTorqueTicksStamp = state.TorqueTicksStamp;
@@ -161,4 +177,135 @@ function updateState(
 			return;
 	}
 	sensor.emit('powerData', state);
+}
+
+// TODO inherit here Messages class to build BicyclePower specific messages
+// Expoer des methode de setX, l'utilisateur est censé les appeller le plus souvent possible, dés qu'il a des données
+// Les compteurs de donnée seront incrémenté s'il y a changement au moment de l'envoi
+// Ils afficheront aussi automatiquement les pages en fonction de ce qui a été configuré
+
+export class BicyclePowerMessages extends Messages {
+	
+	static powerOnlyDataPage(channel: number, powerEventCount: number, pedalPower: number|null,
+		isRightPedal: boolean|null, crankCadence: number|null, accumulatedPower: number,
+		power: number): Buffer {
+		console.debug('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		console.debug('> Message:powerOnlyDataPage')
+		let payload: number[] = [];
+		payload.push(BPConstants.DATA_PAGE_POWER_ONLY);
+		payload.push(powerEventCount);
+		if (pedalPower === null) {
+			payload.push(0xFF);
+		} else {
+			if (isRightPedal) {
+				payload.push(0x10 | pedalPower);
+			} else {
+				payload.push(pedalPower);
+			}
+		}
+		payload = payload.concat(this.intToLEHexArray(crankCadence))
+		payload = payload.concat(this.intToLEHexArray(accumulatedPower, 2));
+		payload = payload.concat(this.intToLEHexArray(power, 2));
+		return Messages.broadcastData(channel, payload);
+	}
+}
+
+export class BicyclePowerEmitter extends AntPlusSensor {
+
+	private messageCount: number = 0;
+	private powerEventCount: number = 0;
+	private power?: number;
+	private pedalPower?: number|null;
+	private isRightPedal?: boolean|null;
+	private crankCadence?: number|null;
+	private accumulatedPower?: number;
+
+	constructor(stick) {
+		super(stick);
+		this.txCbk = this.sendData.bind(this);
+	}
+
+	public attach(channel, deviceID): void {
+		super.attach(channel, 'transmit', deviceID, BicyclePowerSensor.deviceType, 0x05, 255, 8182);
+		this.channel = channel;
+	}
+
+
+	/**
+	 * Use this setter method if you know the power for each pedal
+	 * @param left Power on the left pedal in Watt
+	 * @param right Power on the left pedal in Watt
+	 * @param crankCadence Optional crank cadence in RPM
+	 */
+	public setPedalPower(left: number, right: number, crankCadence: (number|null) = null) {
+		this.power = Math.round(left+right);
+		this.pedalPower = Math.round((right/this.power)*100);
+		this.isRightPedal = true;
+		this.crankCadence = Math.round(crankCadence);
+
+		this.powerEventCount = (this.powerEventCount + 1) % 256;
+		this.accumulatedPower = (this.accumulatedPower + this.power) % 65536;
+	}
+
+	/**
+	 * Use this setter method if you know the power for twi pedals, but don't know their side
+	 * @param first Power on the first pedal in Watt
+	 * @param second Power on the second pedal in Watt
+	 * @param crankCadence Optional crank cadence in RPM
+	 */
+	public setUnknownPedalPower(first: number, second: number, crankCadence: (number|null) = null) {
+		this.power = Math.round(first+second);
+		this.pedalPower = Math.round((first/this.power)*100);
+		this.isRightPedal = false;
+		this.crankCadence = Math.round(crankCadence);
+
+		this.powerEventCount = (this.powerEventCount + 1) % 256;
+		this.accumulatedPower = (this.accumulatedPower + this.power) % 65536;
+	}
+
+	/**
+	 * Use this setter method if you have global power
+	 * @param power Power measured in Watt
+	 * @param cadence Optional crank cadence in RPM
+	 */
+	public setPower(power: number, crankCadence: (number|null) = null) {
+		this.power = Math.round(power);
+		this.pedalPower = null;
+		this.isRightPedal = null;
+		this.crankCadence = Math.round(crankCadence);
+
+		this.powerEventCount = (this.powerEventCount + 1) % 256;
+		this.accumulatedPower = (this.accumulatedPower + this.power) % 65536;
+	}
+
+	/**
+	 * Write the next data page to the device and increment counters accordingly
+	 */
+	private sendData(): void {
+		// Don't send anything before the first power set
+		if (this.power === undefined) {
+			return;
+		}
+
+		if (this.messageCount == 60) {
+			// Manufacturer’s Information
+			// Minimum: Interleave every 121 messages
+			this.write(Messages.manufacturersInformationDataPage(this.channel, 0, 0x00FF, 0));
+		}
+		else if (this.messageCount == 120) {
+			// Product Information
+			// Minimum: Interleave every 121 messages
+			this.write(Messages.productInformationDataPage(this.channel, 1.1, 0))
+		}
+		else {
+			// Standard Power Only
+			// Default broadcast message
+			this.write(BicyclePowerMessages.powerOnlyDataPage(this.channel, this.powerEventCount, this.pedalPower,
+				this.isRightPedal, this.crankCadence, this.accumulatedPower, this.power));
+		}
+		this.messageCount = (this.messageCount + 1) % 121;
+	}
+
+	/** We don't need updateState here but it is abstract */
+	protected updateState() {}
 }

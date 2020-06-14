@@ -24,6 +24,7 @@ module.exports = {
 	CadenceScanner: C.CadenceScanner,
 	BicyclePowerSensor: BP.BicyclePowerSensor,
 	BicyclePowerScanner: BP.BicyclePowerScanner,
+	BicyclePowerEmitter: BP.BicyclePowerEmitter,
 	FitnessEquipmentSensor: FE.FitnessEquipmentSensor,
 	FitnessEquipmentScanner: FE.FitnessEquipmentScanner,
 	MuscleOxygenSensor: MO.MuscleOxygenSensor,
