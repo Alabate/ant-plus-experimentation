@@ -1,7 +1,9 @@
 const Ant = require('ant-plus');
+const { clearTimeout } = require('timers');
 
 const LOG_LEVEL = 0; // Libusb debug : 0 Nothing, 4 Debug
 const SPEED_SENSOR_ID = 31098; // Find it with scanSpees.js
+const POWER_SENSOR_ID = 1337; // Random choosen ID
 const HOME_TRAINER_LEVEL = 3; // Se this level according to the level on your home trainer
 const HOME_TRAINER_POWER_CURVES = {
   // Set here all the measurement points of speed to power.
@@ -17,7 +19,8 @@ const HOME_TRAINER_POWER_CURVES = {
   7: { 0:0, 10: 95, 20: 267, 30: 435, 40: 605, 50: 776, 60: 958 },
   8: { 0:0, 10: 110, 20: 300, 30: 499, 40: 690, 50: 890, 60: 1080 },
 }
-const WHEEL_CIRCUMFERENCE = 2.10; // in meter
+const WHEEL_CIRCUMFERENCE = 2.1; // in meter
+const ZERO_TIMEOUT = 2000; // Duration without speed data before sending zero power
 
 // Computed consts
 const powerCurve = HOME_TRAINER_POWER_CURVES[HOME_TRAINER_LEVEL];
@@ -49,7 +52,6 @@ function powerFromSpeedCurve(curve, speed) {
 
   // if exact speed match (avoid zero division later)
   if (infSpeed == supSpeed) {
-    console.log('Exact match', supSpeed)
     return curve[infSpeed];
   }
 
@@ -61,6 +63,7 @@ function powerFromSpeedCurve(curve, speed) {
 
 // Init
 const stick = new Ant.GarminStick2(LOG_LEVEL);
+let powerEmitter = new Ant.BicyclePowerEmitter(stick);
 let speedSensor = new Ant.SpeedSensor(stick);
 speedSensor.setWheelCircumference(WHEEL_CIRCUMFERENCE);
 
@@ -68,6 +71,7 @@ speedSensor.setWheelCircumference(WHEEL_CIRCUMFERENCE);
 stick.on('startup', function () {
   console.log('Startup');
   speedSensor.attach(0, SPEED_SENSOR_ID);
+  powerEmitter.attach(1, POWER_SENSOR_ID);
 });
 stick.on('attach', function () {
   console.log('Attach');
@@ -77,10 +81,30 @@ stick.on('detached', function () {
 });
 
 // Speed sensor events
+let zeroTimeout = null;
 speedSensor.on('speedData', data => {
+  if (zeroTimeout) {
+    clearTimeout(zeroTimeout)
+  }
+
   if (data.CalculatedSpeed) {
     const kmphSpeed = data.CalculatedSpeed * 3.6 // Convert m/s to km/h
-    console.log('power (W)', powerFromSpeedCurve(powerCurve, kmphSpeed))
+    const power = powerFromSpeedCurve(powerCurve, kmphSpeed)
+    powerEmitter.setPower(power)
+    console.log('--------------------------')
+    console.log('Speed (km/h)', kmphSpeed)
+    console.log('Power (W)', power)
+    console.log('--------------------------')
+
+    // Avoid sending power when there is no speed data anymore
+    zeroTimeout = setTimeout(() => {
+      powerEmitter.setPower(0)
+      console.log('--------------------------')
+      console.log('No speed timeout!')
+      console.log('Speed (km/h)', 'unknown')
+      console.log('Power (W)', 0)
+      console.log('--------------------------')
+    }, ZERO_TIMEOUT);
   }
   else {
     console.log('Data received but no speed calculated yet..')

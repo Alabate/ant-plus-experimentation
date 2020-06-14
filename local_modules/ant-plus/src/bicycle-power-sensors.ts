@@ -189,8 +189,8 @@ export class BicyclePowerMessages extends Messages {
 	static powerOnlyDataPage(channel: number, powerEventCount: number, pedalPower: number|null,
 		isRightPedal: boolean|null, crankCadence: number|null, accumulatedPower: number,
 		power: number): Buffer {
-		console.debug('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
-		console.debug('> Message:powerOnlyDataPage')
+		//console.debug('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+		//console.debug('> Message:powerOnlyDataPage')
 		let payload: number[] = [];
 		payload.push(BPConstants.DATA_PAGE_POWER_ONLY);
 		payload.push(powerEventCount);
@@ -203,7 +203,12 @@ export class BicyclePowerMessages extends Messages {
 				payload.push(pedalPower);
 			}
 		}
-		payload = payload.concat(this.intToLEHexArray(crankCadence))
+		if (crankCadence === null) {
+			payload.push(0xFF);
+		}
+		else {
+			payload = payload.concat(this.intToLEHexArray(crankCadence))
+		}
 		payload = payload.concat(this.intToLEHexArray(accumulatedPower, 2));
 		payload = payload.concat(this.intToLEHexArray(power, 2));
 		return Messages.broadcastData(channel, payload);
@@ -218,7 +223,7 @@ export class BicyclePowerEmitter extends AntPlusSensor {
 	private pedalPower?: number|null;
 	private isRightPedal?: boolean|null;
 	private crankCadence?: number|null;
-	private accumulatedPower?: number;
+	private accumulatedPower: number = 0;
 
 	constructor(stick) {
 		super(stick);
@@ -241,7 +246,7 @@ export class BicyclePowerEmitter extends AntPlusSensor {
 		this.power = Math.round(left+right);
 		this.pedalPower = Math.round((right/this.power)*100);
 		this.isRightPedal = true;
-		this.crankCadence = Math.round(crankCadence);
+		this.crankCadence = crankCadence !== null ? Math.round(crankCadence) : crankCadence;
 
 		this.powerEventCount = (this.powerEventCount + 1) % 256;
 		this.accumulatedPower = (this.accumulatedPower + this.power) % 65536;
@@ -257,7 +262,7 @@ export class BicyclePowerEmitter extends AntPlusSensor {
 		this.power = Math.round(first+second);
 		this.pedalPower = Math.round((first/this.power)*100);
 		this.isRightPedal = false;
-		this.crankCadence = Math.round(crankCadence);
+		this.crankCadence = crankCadence !== null ? Math.round(crankCadence) : crankCadence;
 
 		this.powerEventCount = (this.powerEventCount + 1) % 256;
 		this.accumulatedPower = (this.accumulatedPower + this.power) % 65536;
@@ -272,7 +277,7 @@ export class BicyclePowerEmitter extends AntPlusSensor {
 		this.power = Math.round(power);
 		this.pedalPower = null;
 		this.isRightPedal = null;
-		this.crankCadence = Math.round(crankCadence);
+		this.crankCadence = crankCadence !== null ? Math.round(crankCadence) : crankCadence;
 
 		this.powerEventCount = (this.powerEventCount + 1) % 256;
 		this.accumulatedPower = (this.accumulatedPower + this.power) % 65536;
