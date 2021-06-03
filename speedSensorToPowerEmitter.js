@@ -4,7 +4,7 @@ const { clearTimeout } = require('timers');
 const LOG_LEVEL = 0; // Libusb debug : 0 Nothing, 4 Debug
 const SPEED_SENSOR_ID = 31098; // Find it with scanSpees.js
 const POWER_SENSOR_ID = 1337; // Random choosen ID
-const HOME_TRAINER_LEVEL = 3; // Se this level according to the level on your home trainer
+const HOME_TRAINER_LEVEL = 6; // Se this level according to the level on your home trainer
 const HOME_TRAINER_POWER_CURVES = {
   // Set here all the measurement points of speed to power.
   // This script will do a linear interpolation between measurements.
@@ -91,19 +91,19 @@ speedSensor.on('speedData', data => {
     const kmphSpeed = data.CalculatedSpeed * 3.6 // Convert m/s to km/h
     const power = powerFromSpeedCurve(powerCurve, kmphSpeed)
     powerEmitter.setPower(power)
-    console.log('--------------------------')
-    console.log('Speed (km/h)', kmphSpeed)
-    console.log('Power (W)', power)
-    console.log('--------------------------')
+    console.log('------------------')
+    console.log('Speed (km/h)', Math.round(kmphSpeed*100)/100)
+    console.log('Power (W)', Math.round(power))
+    console.log('------------------')
 
     // Avoid sending power when there is no speed data anymore
     zeroTimeout = setTimeout(() => {
       powerEmitter.setPower(0)
-      console.log('--------------------------')
+      console.log('------------------')
       console.log('No speed timeout!')
-      console.log('Speed (km/h)', 'unknown')
+      console.log('Speed (km/h)', '?')
       console.log('Power (W)', 0)
-      console.log('--------------------------')
+      console.log('------------------')
     }, ZERO_TIMEOUT);
   }
   else {
